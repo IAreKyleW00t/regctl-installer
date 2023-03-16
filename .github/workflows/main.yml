@@ -1,0 +1,52 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test regctl-installer Action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install regctl
+        uses: ./
+
+      - name: Test regctl
+        run: |
+          regctl version
+          regctl tag ls caddy
+          regctl image digest nginx:latest
+          regctl image manifest alpine:3.11
+
+  main:
+    name: Publish new version
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Bump version tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update shared tags
+        run: |
+          MAJOR=$(echo ${{ steps.tag.outputs.new_version }} | cut -d . -f 1)
+          MINOR=$(echo ${{ steps.tag.outputs.new_version }} | cut -d . -f 2)
+          git tag -f v$MAJOR
+          git tag -f v$MAJOR.$MINOR
+          git push -f -u origin v$MAJOR
+          git push -f -u origin v$MAJOR.$MINOR

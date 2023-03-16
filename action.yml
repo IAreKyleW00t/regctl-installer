@@ -1,0 +1,85 @@
+name: regctl-installer
+author: Kyle Colantonio
+description: GitHub Action for installing the regctl CLI tool
+branding:
+  icon: anchor
+  color: blue
+
+inputs:
+  regctl-release:
+    description: regctl release version to be installed
+    required: false
+    default: latest
+  install-dir:
+    description: directory to install regctl binary
+    required: false
+    default: $HOME/.regctl
+  token:
+    description: token to use for GitHub authentication
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: sigstore/cosign-installer@v3.0.1
+    - shell: bash
+      run: |
+        #!/bin/bash
+        set -ex
+
+        # Create install directory
+        mkdir -p ${{ inputs.install-dir }}
+
+        # Pull latest version if not pinned
+        VERSION=${{ inputs.regctl-release }}
+        if [[ "$VERSION" == "latest" ]]; then
+          VERSION=$(curl -u "regctl:${{ inputs.token }}" -s "https://api.github.com/repos/regclient/regclient/releases/latest" | jq -r '.tag_name')
+        fi
+
+        # Parse OS and Arch
+        OS=${{ runner.os }}
+        OS=${OS//macOS/Darwin}
+        OS=$(echo $OS | tr '[:upper:]' '[:lower:]') # lowercase
+        case ${{ runner.arch }} in
+          X64)
+            ARCH=amd64
+            ;;
+          ARM64)
+            ARCH=arm64
+            ;;
+          *)
+            echo "unsupported architecture $arch"
+            exit 1
+            ;;
+        esac
+
+        # Download and Install regctl
+        BIN_SUFFIX=
+        if [[ "$OS" == "windows" ]]; then
+          BIN_SUFFIX=.exe
+        fi
+        curl -fsSL "https://github.com/regclient/regclient/releases/download/${VERSION}/regctl-${OS}-${ARCH}${BIN_SUFFIX}" > "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
+        chmod 755 "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
+
+        # Validate download
+        curl -fsSL https://github.com/regclient/regclient/releases/latest/download/metadata.tgz > metadata.tgz
+        tar -xzf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
+        cosign verify-blob \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
+          --certificate regctl-${OS}-${ARCH}.pem \
+          --signature regctl-${OS}-${ARCH}.sig \
+          "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
+
+    - if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
+      run: echo "${{ inputs.install-dir }}" >> $GITHUB_PATH
+      shell: bash
+
+    - if: ${{ runner.os == 'Windows' }}
+      run: echo "${{ inputs.install-dir }}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+
+    - shell: bash
+      run: |
+        echo "${{ inputs.token }}" | regctl registry login ghcr.io --user "crane" --pass-stdin
