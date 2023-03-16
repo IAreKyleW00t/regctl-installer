@@ -3,7 +3,7 @@ author: Kyle Colantonio
 description: GitHub Action for installing the regctl CLI tool
 branding:
   icon: anchor
-  color: blue
+  color: green
 
 inputs:
   regctl-release:
