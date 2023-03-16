@@ -5,7 +5,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/IAreKyleW00t/regctl-installer/main.yml)](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml)
 [![License](https://img.shields.io/github/license/IAreKyleW00t/regctl-installer)](https://github.com/IAreKyleW00t/regctl-installer/blob/main/LICENSE)
 
-This GitHub Action enables you to interacting with remote images and registries using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl). This action will verify the integrity of the `regctl` release during installation using [cosign](https://docs.sigstore.dev/cosign/overview/).
+This GitHub Action enables you to interacting with remote images and registries using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl). This action will verify the integrity of the `regctl` release during installation using [Cosign](https://docs.sigstore.dev/cosign/overview/).
 
 For a quick start guide on the usage of `regctl`, please refer to https://github.com/regclient/regclient/blob/main/docs/regctl.md. For available regctl releases, see https://github.com/regclient/regclient/releases.
 
