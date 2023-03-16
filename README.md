@@ -1,6 +1,6 @@
 # regctl-installer GitHub Action
 
-[![Docker Hub](https://img.shields.io/badge/marketplace-iarekylew00t%2Fregctl--installer-blue?style=flat)](https://hub.docker.com/r/iarekylew00t/regctl-installer)
+[![GitHub Marketplace](https://img.shields.io/badge/marketplace-iarekylew00t%2Fregctl--installer-blue?style=flat)](https://github.com/marketplace/actions/regctl-installer)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/IAreKyleW00t/regctl-installer?label=version)](https://github.com/IAreKyleW00t/regctl-installer/tags)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/IAreKyleW00t/regctl-installer/main.yml)](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml)
 [![License](https://img.shields.io/github/license/IAreKyleW00t/regctl-installer)](https://github.com/IAreKyleW00t/regctl-installer/blob/main/LICENSE)
