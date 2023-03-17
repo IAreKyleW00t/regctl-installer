@@ -40,11 +40,12 @@ with:
 
 ## Inputs
 
-| input            | Description                              | Default               |
-| ---------------- | ---------------------------------------- | --------------------- |
-| `regctl-release` | `regctl` release version to be installed | `latest`              |
-| `install-dir`    | directory to install `regctl` binary     | `$HOME/.regctl`       |
-| `token`          | token to use for GitHub authentication   | `${{ github.token }}` |
+| input            | Description                               | Default               |
+| ---------------- | ----------------------------------------- | --------------------- |
+| `regctl-release` | `regctl` release version to be installed  | `latest`              |
+| `install-dir`    | directory to install `regctl` binary      | `$HOME/.regctl`       |
+| `username`       | username to use for GitHub authentication | `${{ github.actor }}` |
+| `token`          | token to use for GitHub authentication    | `${{ github.token }}` |
 
 ## Examples
 
