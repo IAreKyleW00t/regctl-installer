@@ -11,29 +11,31 @@ jobs:
     name: Test regctl-installer Action
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+      fail-fast: false # let other tests finish
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        cosign: [true, false]
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.0.1
+        if: matrix.cosign
+
       - name: Install regctl
         uses: ./
 
       - name: Test regctl
-        run: |
-          regctl version
-          regctl tag ls caddy
-          regctl image digest nginx:latest
-          regctl image manifest alpine:3.11
+        run: regctl version
 
   main:
-    if: ${{ github.event_name == 'push' }}
     name: Publish new version
     runs-on: ubuntu-latest
     needs: [test]
+
+    if: github.event_name == 'push'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3

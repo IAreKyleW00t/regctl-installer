@@ -5,7 +5,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/IAreKyleW00t/regctl-installer/main.yml)](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml)
 [![License](https://img.shields.io/github/license/IAreKyleW00t/regctl-installer)](https://github.com/IAreKyleW00t/regctl-installer/blob/main/LICENSE)
 
-This GitHub Action enables you to interacting with remote images and registries using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl). This action will verify the integrity of the `regctl` release during installation using [Cosign](https://docs.sigstore.dev/cosign/overview/).
+This GitHub Action enables you to interacting with remote images and registries using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl). This action will verify the integrity of the `regctl` release during installation if you setup [Cosign](https://docs.sigstore.dev/cosign/overview/) ahead of time (see examples below).
 
 For a quick start guide on the usage of `regctl`, please refer to https://github.com/regclient/regclient/blob/main/docs/regctl.md. For available regctl releases, see https://github.com/regclient/regclient/releases.
 
@@ -18,6 +18,7 @@ For a quick start guide on the usage of `regctl`, please refer to https://github
   - [Pinned version](#pinned-version)
   - [Default version](#pinned-version)
   - [Authenicate on other registries](#authenticate-on-other-registries)
+  - [Automatic validation with Cosign](#automatic-validation-with-cosign)
 
 ## Tags
 
@@ -91,6 +92,21 @@ jobs:
           regctl registry login docker.io \
             --user "${{ vars.DOCKERHUB_USERNAME }}" \
             --pass-stdin
+```
+
+### Automatic validation with Cosign
+
+```yaml
+jobs:
+  regctl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.0.1
+      - name: Install regctl
+        uses: iarekylew00t/regctl-installer@v1
+      - name: Check install
+        run: regctl version
 ```
 
 ## Contributing

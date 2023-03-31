@@ -26,7 +26,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: sigstore/cosign-installer@v3.0.1
     - shell: bash
       run: |
         #!/bin/bash
@@ -66,15 +65,18 @@ runs:
         curl -fsSL "https://github.com/regclient/regclient/releases/download/${VERSION}/regctl-${OS}-${ARCH}${BIN_SUFFIX}" > "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
         chmod 755 "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
 
-        # Validate download
-        curl -fsSL https://github.com/regclient/regclient/releases/latest/download/metadata.tgz > metadata.tgz
-        tar -xzf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
-        cosign verify-blob \
-          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-          --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
-          --certificate regctl-${OS}-${ARCH}.pem \
-          --signature regctl-${OS}-${ARCH}.sig \
-          "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
+        # Validate download (if cosign is setup)
+        if which cosign >/dev/null; then
+          curl -fsSL https://github.com/regclient/regclient/releases/latest/download/metadata.tgz > metadata.tgz
+          tar -xzf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
+          cosign verify-blob \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
+            --certificate regctl-${OS}-${ARCH}.pem \
+            --signature regctl-${OS}-${ARCH}.sig \
+            "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
+          rm -rf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
+        fi
 
     - if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
       run: echo "${{ inputs.install-dir }}" >> $GITHUB_PATH
