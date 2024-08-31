@@ -1,27 +1,33 @@
-name: Main
+name: Action Test & Release
 
 on:
   push:
     branches: [main]
+    paths:
+      - .github/workflows/main.yml
+      - action.yml
   pull_request:
     branches: [main]
+    paths:
+      - .github/workflows/main.yml
+      - action.yml
 
 jobs:
   test:
-    name: Test regctl-installer Action
+    name: Test action
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false # let other tests finish
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         cosign: [true, false]
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.6.0
+        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
         if: matrix.cosign
 
       - name: Install regctl
@@ -32,17 +38,16 @@ jobs:
 
   main:
     name: Publish new version
-    runs-on: ubuntu-latest
-    needs: [test]
-
     if: github.event_name == 'push'
+    needs: [test]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Bump version tag
         id: tag
-        uses: mathieudutour/github-tag-action@v6.2
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -54,3 +59,10 @@ jobs:
           git tag -f v$MAJOR.$MINOR
           git push -f -u origin v$MAJOR
           git push -f -u origin v$MAJOR.$MINOR
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        with:
+          tag_name: v${{ steps.tag.outputs.new_version }}
+          make_latest: true
+          generate_release_notes: true
