@@ -1,10 +1,10 @@
-# regctl-installer GitHub Action
+# 📦 regctl-installer
 
-[![GitHub Marketplace](https://img.shields.io/badge/marketplace-iarekylew00t%2Fregctl--installer-blue?style=flat)](https://github.com/marketplace/actions/regctl-installer)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/IAreKyleW00t/regctl-installer?label=version)](https://github.com/IAreKyleW00t/regctl-installer/tags)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/IAreKyleW00t/regctl-installer/main.yml)](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml)
-[![License](https://img.shields.io/github/license/IAreKyleW00t/regctl-installer)](https://github.com/IAreKyleW00t/regctl-installer/blob/main/LICENSE)
-![Dependabot](https://img.shields.io/badge/dependabot-025E8C?style=flat&logo=dependabot&logoColor=white)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-regctl--installer-blue?style=flat&logo=github)](https://github.com/marketplace/actions/regctl-installer)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/IAreKyleW00t/regctl-installer?style=flat&label=Latest%20Version&color=blue)](https://github.com/IAreKyleW00t/regctl-installer/tags)
+[![Action Test & Release](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml/badge.svg)](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/main.yml)
+[![License](https://img.shields.io/github/license/IAreKyleW00t/regctl-installer?label=License)](https://github.com/IAreKyleW00t/regctl-installer/blob/main/LICENSE)
+[![Dependabot](https://img.shields.io/badge/Dependabot-0366d6?style=flat&logo=dependabot&logoColor=white)](.github/dependabot.yml)
 
 This GitHub Action enables you to interacting with remote images and registries
 using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl).
@@ -23,9 +23,11 @@ regctl releases, see https://github.com/regclient/regclient/releases.
 - [Inputs](#inputs)
 - [Examples](#examples)
   - [Pinned version](#pinned-version)
-  - [Default version](#pinned-version)
-  - [Authenicate on other registries](#authenticate-on-other-registries)
+  - [Default version](#default-version)
+  - [Authenticate on other registries](#authenticate-on-other-registries)
   - [Automatic validation with Cosign](#automatic-validation-with-cosign)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Tags
 
