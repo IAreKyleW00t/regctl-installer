@@ -40,7 +40,6 @@ runs:
   using: composite
   steps:
     - id: sys
-      if: steps.cache.outputs.cache-hit == false
       shell: bash
       run: |
         # Parse System OS and Arch
