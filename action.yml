@@ -1,50 +1,55 @@
 name: regctl-installer
 author: Kyle Colantonio
 description: GitHub Action for installing the regctl CLI tool
+
 branding:
   icon: anchor
   color: green
 
 inputs:
   regctl-release:
-    description: regctl release version to be installed
+    description: regctl version to be installed
     required: false
     default: latest
   install-dir:
-    description: directory to install regctl binary
+    description: Directory to install regctl binary into
     required: false
     default: $HOME/.regctl
+  cache:
+    description: Cache the regctl binary
+    required: false
+    default: "true"
+  verify:
+    description: Perform cosign validation on regctl binary after download
+    required: false
+    default: "true"
   username:
-    description: username to use for GitHub authentication
+    description: GitHub username GitHub Container Registry
     required: false
     default: ${{ github.actor }}
   token:
-    description: token to use for GitHub authentication
+    description: GitHub Token for API and GitHub Container Registry access
     required: false
     default: ${{ github.token }}
 
+outputs:
+  version:
+    description: The version of regctl the was installed
+    value: ${{ steps.release.outputs.version }}
+  cache-hit:
+    description: If the regctl binary was loaded via cache
+    value: ${{ steps.cache.outputs.cache-hit || false }}
+
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - shell: bash
+    - id: sys
+      if: steps.cache.outputs.cache-hit == false
+      shell: bash
       run: |
-        #!/bin/bash
-        set -e
-
-        # Create install directory
-        mkdir -p ${{ inputs.install-dir }}
-
-        # Pull latest version if not pinned
-        VERSION=${{ inputs.regctl-release }}
-        if [[ "$VERSION" == "latest" ]]; then
-          VERSION=$(curl -u "${{ inputs.username }}:${{ inputs.token }}" -s "https://api.github.com/repos/regclient/regclient/releases/latest" | jq -r '.tag_name')
-        fi
-
-        # Parse OS and Arch
-        OS=${{ runner.os }}
-        OS=${OS//macOS/Darwin}
-        OS=$(echo $OS | tr '[:upper:]' '[:lower:]') # lowercase
-        case ${{ runner.arch }} in
+        # Parse System OS and Arch
+        OS=$(echo "${RUNNER_OS/macOS/Darwin}" | tr '[:upper:]' '[:lower:]')
+        case "$RUNNER_ARCH" in
           X64)
             ARCH=amd64
             ;;
@@ -52,40 +57,113 @@ runs:
             ARCH=arm64
             ;;
           *)
-            echo "unsupported architecture $arch"
+            echo "::error::Unsupported architecture: $RUNNER_ARCH"
             exit 1
             ;;
         esac
+        echo "os=$OS" | tee -a "$GITHUB_OUTPUT"
+        echo "arch=$ARCH" | tee -a "$GITHUB_OUTPUT"
 
-        # Download and Install regctl
-        BIN_SUFFIX=
-        if [[ "$OS" == "windows" ]]; then
-          BIN_SUFFIX=.exe
-        fi
-        curl -fsSL "https://github.com/regclient/regclient/releases/download/${VERSION}/regctl-${OS}-${ARCH}${BIN_SUFFIX}" > "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
-        chmod 755 "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
-
-        # Validate download (if cosign is setup)
-        if which cosign >/dev/null; then
-          curl -fsSL https://github.com/regclient/regclient/releases/latest/download/metadata.tgz > metadata.tgz
-          tar -xzf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
-          cosign verify-blob \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
-            --certificate regctl-${OS}-${ARCH}.pem \
-            --signature regctl-${OS}-${ARCH}.sig \
-            "${{ inputs.install-dir }}/regctl${BIN_SUFFIX}"
-          rm -rf metadata.tgz regctl-${OS}-${ARCH}.pem regctl-${OS}-${ARCH}.sig
-        fi
-
-    - if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
-      run: echo "${{ inputs.install-dir }}" >> $GITHUB_PATH
+    - id: release
       shell: bash
-
-    - if: ${{ runner.os == 'Windows' }}
-      run: echo "${{ inputs.install-dir }}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      shell: pwsh
-
-    - shell: bash
+      env:
+        VERSION: ${{ inputs.regctl-release }}
+        TOKEN: ${{ inputs.token }}
       run: |
-        echo "${{ inputs.token }}" | regctl registry login ghcr.io --user "${{ inputs.username }}" --pass-stdin
+        # Get latest release (if not pinned)
+        if [[ "$VERSION" == "latest" ]]; then
+          VERSION=$(curl -fSsL \
+            -u "x:$TOKEN" \
+            "https://api.github.com/repos/regclient/regclient/releases/latest" \
+            | jq -r '.tag_name')
+        fi
+        echo "version=$VERSION" | tee -a "$GITHUB_OUTPUT"
+
+    - id: cache
+      if: inputs.cache == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.install-dir }}
+        key: regctl-${{ runner.os }}-${{ runner.arch }}-${{ steps.release.outputs.version }}
+
+    - id: mkdir
+      shell: bash
+      if: steps.cache.outputs.cache-hit == false
+      env:
+        INSTALL_DIR: ${{ inputs.install-dir }}
+      run: |
+        # Create install directory
+        mkdir -p "$INSTALL_DIR"
+
+    - id: install
+      shell: bash
+      if: inputs.cache == 'false' || steps.cache.outputs.cache-hit == false
+      env:
+        TOKEN: ${{ inputs.token }}
+        INSTALL_DIR: ${{ inputs.install-dir }}
+        VERSION: ${{ steps.release.outputs.version }}
+        OS: ${{ steps.sys.outputs.os }}
+        ARCH: ${{ steps.sys.outputs.arch }}
+        EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
+      run: |
+        # Download and Install regctl
+        curl -fsSL \
+          -u ":$TOKEN" \
+          -o "$INSTALL_DIR/regctl$EXE" \
+          "https://github.com/regclient/regclient/releases/download/$VERSION/regctl-$OS-$ARCH$EXE"
+        chmod 755 "$INSTALL_DIR/regctl$EXE"
+
+    - id: verify
+      shell: bash
+      if: inputs.verify == 'true' && (inputs.cache == 'false' || steps.cache.outputs.cache-hit == false)
+      env:
+        OS: ${{ steps.sys.outputs.os }}
+        ARCH: ${{ steps.sys.outputs.arch }}
+        INSTALL_DIR: ${{ inputs.install-dir }}
+        EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
+      run: |
+        # Validate regctl binary (if cosign is installed)
+        if which cosign >/dev/null; then
+          curl -fsSL -O \
+            "https://github.com/regclient/regclient/releases/latest/download/metadata.tgz"
+          tar -xzf metadata.tgz "regctl-$OS-$ARCH.pem" "regctl-$OS-$ARCH.sig"
+          cosign verify-blob \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp "https://github.com/regclient/regclient/.github/workflows/" \
+            --certificate "regctl-$OS-$ARCH.pem" \
+            --signature ""regctl-$OS-$ARCH.sig"" \
+            "$INSTALL_DIR/regctl$EXE"
+          rm -rf metadata.tgz "regctl-$OS-$ARCH.pem" "regctl-$OS-$ARCH.sig"
+        else
+          echo "Binary verification was skipped because 'cosign' was not found in PATH"
+        fi
+
+    - id: path
+      shell: bash
+      if: contains(fromJson('["Linux", "macOS"]'), runner.os)
+      env:
+        INSTALL_DIR: ${{ inputs.install-dir }}
+      run: |
+        # Update Linux/macOS PATH
+        echo "$INSTALL_DIR" >> $GITHUB_PATH
+
+    - id: path-win
+      shell: pwsh
+      if: runner.os == 'Windows'
+      env:
+        INSTALL_DIR: ${{ inputs.install-dir }}
+      run: |
+        # Update Windows PATH
+        echo "$env:INSTALL_DIR" | Out-File `
+          -Encoding utf8 `
+          -Append `
+          -FilePath "$env:GITHUB_PATH"
+
+    - id: login
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+        USERNAME: ${{ inputs.username }}
+      run: |
+        # Login to GitHub Container Registry
+        echo "$TOKEN" | regctl registry login ghcr.io --user "$USERNAME" --pass-stdin
