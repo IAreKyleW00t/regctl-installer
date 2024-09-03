@@ -28,16 +28,22 @@ This action supports Linux, macOS and Windows runners (results may vary with sel
 
 ## Usage
 
+> [!IMPORTANT]
+>
+> You need to authenticate into registries using either the
+> [docker/login-action](https://github.com/docker/login-action) Action or by
+> manually configuring credentials in within `regctl` itself. See the
+> [Examples](#examples) section for details on how to do this.
+
 ### Inputs
 
-| Name             | Type    | Description                                               | Default               |
-| ---------------- | ------- | --------------------------------------------------------- | --------------------- |
-| `regctl-release` | String  | `regctl` version to be installed                          | `latest`              |
-| `install-dir`    | String  | directory to install `regctl` binary into                 | `$HOME/.regctl`       |
-| `cache`          | Boolean | Cache the `regctl` binary                                 | `true`                |
-| `verify`         | Boolean | Perform `cosign` validation on regctl binary [1]          | `true`                |
-| `username`       | String  | GitHub username GitHub Container Registry                 | `${{ github.actor }}` |
-| `token`          | String  | GitHub Token for API and GitHub Container Registry access | `${{ github.token }}` |
+| Name             | Type    | Description                                      | Default               |
+| ---------------- | ------- | ------------------------------------------------ | --------------------- |
+| `regctl-release` | String  | `regctl` version to be installed                 | `latest`              |
+| `install-dir`    | String  | directory to install `regctl` binary into        | `$HOME/.regctl`       |
+| `cache`          | Boolean | Cache the `regctl` binary                        | `true`                |
+| `verify`         | Boolean | Perform `cosign` validation on regctl binary [1] | `true`                |
+| `token`          | String  | GitHub Token for API access                      | `${{ github.token }}` |
 
 > 1. `cosign` must be in your `PATH` for validation to work. It will be skipped
 >    if it's not present; See
@@ -69,17 +75,44 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
     regctl-release: v0.7.1
 ```
 
-### Authenticate on other registries
+### Authenticate using Docker credentials
 
 ```yaml
 - name: Install regctl
   uses: iarekylew00t/regctl-installer@v1
 
-- name: Login to Docker Hub
+- name: Login to DockerHub
+  uses: docker/login-action@v3
+  with:
+    username: ${{ secrets.DOCKERHUB_USERNAME }}
+    password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+- name: Login to GHCR
+  uses: docker/login-action@v3
+  with:
+    registry: ghcr.io
+    username: ${{ github.actor }}
+    password: ${{ github.token }}
+```
+
+### Authenticate using regctl
+
+```yaml
+- name: Install regctl
+  uses: iarekylew00t/regctl-installer@v1
+
+- name: Login to DockerHub
   run: |
     echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
     regctl registry login docker.io \
       --user "${{ vars.DOCKERHUB_USERNAME }}" \
+      --pass-stdin
+
+- name: Login to GHCR
+  run: |
+    echo "${{ github.token }}" | \
+    regctl registry login ghcr.io \
+      --user "${{ github.actor }}" \
       --pass-stdin
 ```
 
