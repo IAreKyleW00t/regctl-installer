@@ -10,8 +10,8 @@ This GitHub Action enables you to interacting with remote images and registries
 using [`regctl`](https://github.com/google/go-containerregistry/tree/main/cmd/regctl).
 This action will verify the integrity of the `regctl` release during installation
 if you setup [Cosign](https://docs.sigstore.dev/cosign/overview/) ahead of
-time (see examples below) and as well as cache the `regctl` binary for future runs
-using the [actions/cache](https://github.com/actions/cache) Action.
+time (see [Examples](#examples) below). This Action will also utilize
+[actions/cache](https://github.com/actions/cache) to cache the `regctl` binary.
 
 For a quick start guide on the usage of `regctl`, please refer to
 https://github.com/regclient/regclient/blob/main/docs/regctl.md. For available
