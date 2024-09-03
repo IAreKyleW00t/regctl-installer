@@ -126,11 +126,41 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
   uses: iarekylew00t/regctl-installer@v2
 ```
 
+## Releases
+
+For maintainers, the following release process should be used when cutting new
+versions.
+
+1. ⏬ Ensure all changes are in the `main` branch and all necessary
+   [Workflows](https://github.com/IAreKyleW00t/regctl-installer/actions) are
+   passing.
+
+   ```sh
+   git checkout main
+   git pull
+   ```
+
+2. 🔖 Create a new Tag, push it up, then create a
+   [new Release](https://github.com/IAreKyleW00t/regctl-installer/releases/new)
+   for the version.
+
+   ```sh
+   git tag v1.2.3
+   git push -u origin v1.2.3
+   ```
+
+   Alternatively you can create the Tag on the GitHub Release page itself.
+
+   When the tag is pushed it will kick off the
+   [Shared Tags](https://github.com/IAreKyleW00t/regctl-installer/actions/workflows/shared-tags.yml)
+   Workflows to update the `v$MAJOR` and `v$MAJOR.MINOR` tags.
+
 ## Contributing
 
 Feel free to contribute and make things better by opening an
 [Issue](https://github.com/IAreKyleW00t/regctl-installer/issues) or
-[Pull Request](https://github.com/IAreKyleW00t/regctl-installer/pulls).
+[Pull Request](https://github.com/IAreKyleW00t/regctl-installer/pulls).  
+Thank you for your contribution! ❤️
 
 ## License
 
