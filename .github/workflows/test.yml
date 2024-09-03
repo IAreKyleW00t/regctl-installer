@@ -1,0 +1,61 @@
+name: Action Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - action.yml
+
+jobs:
+  test:
+    name: Test action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        release: [latest, v0.7.1]
+        cosign: [true, false]
+        cache: [true, false]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
+        if: matrix.cosign
+
+      - name: Install regctl
+        id: regctl
+        uses: ./
+        with:
+          regctl-release: ${{ matrix.release }}
+          cache: ${{ matrix.cache }}
+
+      - name: Test regctl (Linux/macOS)
+        if: contains(fromJson('["Linux","macOS"]'), runner.os)
+        shell: bash
+        env:
+          VERSION: ${{ steps.regctl.outputs.version }}
+          CACHE_HIT: ${{ steps.regctl.outputs.cache-hit }}
+        run: |
+          regctl version | grep "$VERSION"
+          test "${{ matrix.cache }}" == "$CACHE_HIT"
+
+      - name: Test regctl (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.regctl.outputs.version }}
+          CACHE_HIT: ${{ steps.regctl.outputs.cache-hit }}
+        run: |
+          regctl version | grep "$VERSION"
+          if ("${{ matrix.cache }}" -eq "$env:CACHE_HIT") {
+            exit 0
+          } else {
+            exit 1
+          }
