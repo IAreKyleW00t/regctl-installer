@@ -23,7 +23,7 @@ This action supports Linux, macOS and Windows runners (results may vary with sel
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v1
+  uses: iarekylew00t/regctl-installer@v2
 ```
 
 ## Usage
@@ -70,7 +70,7 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v1
+  uses: iarekylew00t/regctl-installer@v2
   with:
     regctl-release: v0.7.1
 ```
@@ -79,7 +79,7 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v1
+  uses: iarekylew00t/regctl-installer@v2
 
 - name: Login to DockerHub
   uses: docker/login-action@v3
@@ -99,7 +99,7 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v1
+  uses: iarekylew00t/regctl-installer@v2
 
 - name: Login to DockerHub
   run: |
@@ -123,7 +123,7 @@ This Actions requires the following permissions granted to the GITHUB_TOKEN.
   uses: sigstore/cosign-installer@v3.0.1
 
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v1
+  uses: iarekylew00t/regctl-installer@v2
 ```
 
 ## Contributing
