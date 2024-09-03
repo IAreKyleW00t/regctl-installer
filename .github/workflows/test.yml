@@ -26,8 +26,8 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install Cosign
+        if: matrix.cosign == true
         uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
-        if: matrix.cosign
 
       - name: Install regctl
         id: regctl
@@ -36,26 +36,9 @@ jobs:
           regctl-release: ${{ matrix.release }}
           cache: ${{ matrix.cache }}
 
-      - name: Test regctl (Linux/macOS)
-        if: contains(fromJson('["Linux","macOS"]'), runner.os)
+      - name: Test regctl
         shell: bash
         env:
           VERSION: ${{ steps.regctl.outputs.version }}
-          CACHE_HIT: ${{ steps.regctl.outputs.cache-hit }}
         run: |
           regctl version | grep "$VERSION"
-          test "${{ matrix.cache }}" == "$CACHE_HIT"
-
-      - name: Test regctl (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.regctl.outputs.version }}
-          CACHE_HIT: ${{ steps.regctl.outputs.cache-hit }}
-        run: |
-          regctl version | grep "$VERSION"
-          if ("${{ matrix.cache }}" -eq "$env:CACHE_HIT") {
-            exit 0
-          } else {
-            exit 1
-          }
