@@ -37,13 +37,13 @@ This action supports Linux, macOS and Windows runners (results may vary with sel
 
 ### Inputs
 
-| Name             | Type    | Description                                      | Default               |
-| ---------------- | ------- | ------------------------------------------------ | --------------------- |
-| `regctl-release` | String  | `regctl` version to be installed                 | `latest`              |
-| `install-dir`    | String  | directory to install `regctl` binary into        | `$HOME/.regctl`       |
-| `cache`          | Boolean | Cache the `regctl` binary                        | `true`                |
-| `verify`         | Boolean | Perform `cosign` validation on regctl binary [1] | `true`                |
-| `token`          | String  | GitHub Token for API access                      | `${{ github.token }}` |
+| Name             | Type    | Description                                        | Default               |
+| ---------------- | ------- | -------------------------------------------------- | --------------------- |
+| `regctl-release` | String  | `regctl` version to be installed                   | `latest`              |
+| `install-dir`    | String  | directory to install `regctl` binary into          | `$HOME/.regctl`       |
+| `cache`          | Boolean | Cache the `regctl` binary                          | `true`                |
+| `verify`         | Boolean | Perform `cosign` validation on `regctl` binary [1] | `true`                |
+| `token`          | String  | GitHub Token for API access                        | `${{ github.token }}` |
 
 > 1. `cosign` must be in your `PATH` for validation to work. It will be skipped
 >    if it's not present; See
