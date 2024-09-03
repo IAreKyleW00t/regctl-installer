@@ -43,3 +43,4 @@ jobs:
           VERSION: ${{ steps.regctl.outputs.version }}
         run: |
           regctl version | grep "$VERSION"
+          regctl image inspect busybox:latest
