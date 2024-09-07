@@ -44,8 +44,8 @@ For available regctl releases, refer to
 | ---------------- | ------- | ------------------------------------------ | --------------------- |
 | `regctl-release` | String  | `regctl` release version to be installed   | `latest`              |
 | `verify`         | Boolean | Perform signature verification on `regctl` | `true`                |
-| `cache`          | Boolean | Whether to utilize cache with the `regctl` | `true`                |
-| `token`          | String  | GitHub Token for REST API access           | `${{ github.token }}` |
+| `cache`          | Boolean | Whether to utilize cache with `regctl`     | `true`                |
+| `token`          | String  | GitHub token for REST API access           | `${{ github.token }}` |
 
 ### Outputs
 
