@@ -2,45 +2,122 @@ name: Action Tests
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - action.yml
   pull_request:
-    branches: [main]
-    paths:
-      - action.yml
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
-  test:
-    name: Test action
-    runs-on: ${{ matrix.os }}
+  test-cosign:
+    name: Test cosign
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        release: [latest, v0.7.1]
-        cosign: [true, false]
-        cache: [true, false]
+        os: [macos, ubuntu, windows]
+        verify: [true, false]
+    permissions:
+      contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install Cosign
-        if: matrix.cosign == true
         uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
 
-      - name: Install regctl
+      - name: Setup regctl
         id: regctl
         uses: ./
         with:
-          regctl-release: ${{ matrix.release }}
+          verify: ${{ matrix.verify }}
+
+      - name: Test regctl
+        shell: bash
+        run: |
+          if ! which regctl ; then
+            echo "::error::regctl not found in PATH"
+            exit 1
+          fi
+
+  test-version:
+    name: Test version
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos, ubuntu, windows]
+        version: [latest, v0.7.1, 9de7397da9f1c00dad5213519366002376b8d5ed]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup regctl
+        id: regctl
+        uses: ./
+        with:
+          regctl-release: ${{ matrix.version }}
+
+      - name: Test regctl
+        shell: bash
+        env:
+          MATRIX_VERSION: ${{ matrix.version }}
+          VERSION: ${{ steps.regctl.outputs.version }}
+        run: |
+          if ! which regctl ; then
+            echo "::error::regctl not found in PATH"
+            exit 1
+          fi
+
+          echo "EXPECTED=$MATRIX_VERSION"
+          echo "VERSION=$VERSION"
+          [ "$MATRIX_VERSION" != "latest" ] && VERSION=$MATRIX_VERSION
+          if ! regctl version | grep "$VERSION" ; then
+            echo "::error::regctl $VERSION does not appear to be installed"
+            exit 1
+          fi
+
+  test-cache:
+    name: Test cache
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos, ubuntu, windows]
+        cache: [true, false]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup regctl (cache)
+        if: matrix.cache == true
+        uses: ./
+
+      - name: Setup regctl
+        id: regctl
+        uses: ./
+        with:
           cache: ${{ matrix.cache }}
 
       - name: Test regctl
         shell: bash
         env:
-          VERSION: ${{ steps.regctl.outputs.version }}
+          CACHE_HIT: ${{ steps.regctl.outputs.cache-hit }}
+          MATRIX_CACHE: ${{ matrix.cache }}
         run: |
-          regctl version | grep "$VERSION"
-          regctl image inspect busybox:latest
+          if ! which regctl ; then
+            echo "::error::regctl not found in PATH"
+            exit 1
+          fi
+
+          echo "EXPECTED=$MATRIX_CACHE"
+          echo "CACHE_HIT=$CACHE_HIT"
+          if [ "$MATRIX_CACHE" != "$CACHE_HIT" ]; then
+            echo "::error::Cache hit is not what was expected"
+            exit 1
+          fi
