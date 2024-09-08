@@ -33242,6 +33242,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.REGCLIENT_REPO = void 0;
 exports.run = run;
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
@@ -33252,7 +33253,7 @@ const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
 const lookpath_1 = __nccwpck_require__(6110);
 const utils = __importStar(__nccwpck_require__(1314));
-const REGCLIENT_REPO = 'https://github.com/regclient/regclient';
+exports.REGCLIENT_REPO = 'https://github.com/regclient/regclient';
 async function run() {
     let tmpDir;
     try {
@@ -33261,62 +33262,80 @@ async function run() {
         const ARCH = utils.getArch(process.arch);
         const EXE = OS === 'windows' ? '.exe' : '';
         const BIN_NAME = `regctl${EXE}`;
+        const ARTIFACT_NAME = `regctl-${OS}-${ARCH}${EXE}`;
         // Authenticate with GitHub
         const octokit = github.getOctokit(core.getInput('token'));
         // Validate requested version
         let version = core.getInput('regctl-release');
-        if (utils.isSha(version)) {
-            version = await utils.getVersionBySha(version, octokit);
+        try {
+            core.debug(`version => ${version}`);
+            if (utils.isSha(version)) {
+                version = await utils.getVersionReleaseBySha(version, octokit);
+            }
+            else if (utils.validVersion(version)) {
+                version = await utils.getVersionRelease(version, octokit);
+            }
+            else if (version === 'latest') {
+                version = await utils.getLatestVersion(octokit);
+            }
+            else
+                throw Error;
         }
-        else if (utils.validVersion(version)) {
-            version = await utils.getVersion(version, octokit);
-        }
-        else if (version === 'latest') {
-            version = await utils.getLatestVersion(octokit);
-        }
-        else {
-            throw Error(`Invalid version ${version}. For the set of valid versions, see ${REGCLIENT_REPO}/releases`);
+        catch (error) {
+            // If we get an error message, then something when wrong with a valid
+            // version. If we get a blank error, that means we got an invalid version.
+            const message = error instanceof Error ? error.message : '';
+            if (message) {
+                throw Error(`${message} - For a list of valid versions, see ${exports.REGCLIENT_REPO}/releases`);
+            }
+            else {
+                throw Error(`Invalid version ${version} - For a list of valid versions, see ${exports.REGCLIENT_REPO}/releases`);
+            }
         }
         core.info(`🏗️ Setting up regctl ${version}`);
         core.setOutput('version', version);
         // Create temp directory for downloading non-cached versions
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'regctl_'));
+        core.debug(`tmpdir => ${tmpDir}`);
         // Check if regctl is already in the tool-cache
         const cache = core.getInput('cache');
+        core.debug('Checking regctl cache');
         let mainCachePath = tc.find('regctl', version.substring(1));
         core.setOutput('cache-hit', cache && !!mainCachePath);
         if (!mainCachePath || !cache) {
             // Download regctl into tmpDir
             core.info('⏬ Downloading regctl');
-            const mainUrl = `${REGCLIENT_REPO}/releases/download/${version}/regctl-${OS}-${ARCH}${EXE}`;
-            const mainBin = await tc.downloadTool(mainUrl, path.join(tmpDir, BIN_NAME));
+            const mainBin = await utils.downloadReleaseArtifact(version, ARTIFACT_NAME, path.join(tmpDir, BIN_NAME));
             fs.chmodSync(mainBin, 0o755);
             // Verify regctl if cosign is in the PATH (unless told to skip)
             const cosign = await (0, lookpath_1.lookpath)('cosign');
             if (core.getBooleanInput('verify') && cosign) {
                 // Download release metadata into tmpDir
                 core.info('🔏 Downloading signature metadata');
-                const metadataUrl = `${REGCLIENT_REPO}/releases/download/${version}/metadata.tgz`;
-                const metadataTar = await tc.downloadTool(metadataUrl, path.join(tmpDir, 'metadata.tgz'));
+                const metadataTar = await utils.downloadReleaseArtifact(version, 'metadata.tgz', path.join(tmpDir, 'metadata.tgz'));
                 // Extract metadata
                 const metadataDir = await tc.extractTar(metadataTar, path.join(tmpDir, 'metadata'));
                 // Validate binary against downloaded signature
                 // This will display stdout and stderr automatically
                 core.info('🔍 Verifying signature');
-                const { exitCode } = await exec.getExecOutput(cosign, [
-                    'verify-blob',
-                    '--certificate-oidc-issuer',
-                    'https://token.actions.githubusercontent.com',
-                    '--certificate-identity-regexp',
-                    'https://github.com/regclient/regclient/.github/workflows/',
-                    '--certificate',
-                    path.join(metadataDir, `regctl-${OS}-${ARCH}.pem`),
-                    '--signature',
-                    path.join(metadataDir, `regctl-${OS}-${ARCH}.sig`),
-                    mainBin
-                ]);
-                if (exitCode !== 0) {
-                    throw Error('Signature verification failed');
+                try {
+                    // This will exit 1 on error and display stdout and stderr automatically
+                    await exec.getExecOutput(cosign, [
+                        'verify-blob',
+                        '--certificate-oidc-issuer',
+                        'https://token.actions.githubusercontent.com',
+                        '--certificate-identity-regexp',
+                        'https://github.com/regclient/regclient/.github/workflows/',
+                        '--certificate',
+                        path.join(metadataDir, `regctl-${OS}-${ARCH}.pem`),
+                        '--signature',
+                        path.join(metadataDir, `regctl-${OS}-${ARCH}.sig`),
+                        mainBin
+                    ]);
+                }
+                catch (error) {
+                    core.debug(error instanceof Error ? error.message : error);
+                    throw Error('regctl signature verification failed');
                 }
                 core.info('✅ Signature verified');
             }
@@ -33349,18 +33368,45 @@ async function run() {
 /***/ }),
 
 /***/ 1314:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getArch = getArch;
 exports.getOS = getOS;
 exports.validVersion = validVersion;
 exports.isSha = isSha;
 exports.getLatestVersion = getLatestVersion;
-exports.getVersion = getVersion;
-exports.getVersionBySha = getVersionBySha;
+exports.getVersionRelease = getVersionRelease;
+exports.getVersionReleaseBySha = getVersionReleaseBySha;
+exports.downloadReleaseArtifact = downloadReleaseArtifact;
+const core = __importStar(__nccwpck_require__(2186));
+const tc = __importStar(__nccwpck_require__(7784));
+const main_1 = __nccwpck_require__(399);
 function getArch(arch) {
     switch (arch) {
         case 'x64':
@@ -33404,29 +33450,60 @@ function isSha(sha) {
     }
 }
 async function getLatestVersion(octokit) {
-    return (await octokit.rest.repos.getLatestRelease({
-        owner: 'regclient',
-        repo: 'regclient'
-    })).data.tag_name;
+    try {
+        return (await octokit.rest.repos.getLatestRelease({
+            owner: 'regclient',
+            repo: 'regclient'
+        })).data.tag_name;
+    }
+    catch (error) {
+        core.debug(error instanceof Error ? error.message : error);
+        throw Error('Could not find latest release');
+    }
 }
-async function getVersion(version, octokit) {
-    return (await octokit.rest.repos.getReleaseByTag({
-        owner: 'regclient',
-        repo: 'regclient',
-        tag: version
-    })).data.tag_name;
+async function getVersionRelease(version, octokit) {
+    try {
+        return (await octokit.rest.repos.getReleaseByTag({
+            owner: 'regclient',
+            repo: 'regclient',
+            tag: version
+        })).data.tag_name;
+    }
+    catch (error) {
+        core.debug(error instanceof Error ? error.message : error);
+        throw Error(`Could not find release ${version}`);
+    }
 }
-async function getVersionBySha(sha, octokit) {
-    const tags = (await octokit.rest.repos.listTags({
-        owner: 'regclient',
-        repo: 'regclient'
-    })).data;
-    for (const tag of tags) {
-        if (tag.commit.sha === sha) {
-            return getVersion(tag.name, octokit);
+async function getVersionReleaseBySha(sha, octokit) {
+    // Use pagination to loop over tags in chunks
+    for await (const page of octokit.paginate.iterator(octokit.rest.repos.listTags, { owner: 'regclient', repo: 'regclient' })) {
+        // Loop over tags in page
+        for (const tag of page.data) {
+            if (!validVersion(tag.name))
+                continue; // Skip non semver tags
+            core.debug(`${tag.name} => ${tag.commit.sha}`);
+            if (tag.commit.sha === sha) {
+                try {
+                    // Multiple tags can exist for the same commit so we should check
+                    // them until we get a valid match or exhausted all options
+                    return getVersionRelease(tag.name, octokit);
+                }
+                catch (error) {
+                    core.debug(error instanceof Error ? error.message : error);
+                }
+            }
         }
     }
-    throw Error(`Release not found for ${sha}`);
+    throw Error(`Could not find tag or release associated with commit ${sha}`);
+}
+async function downloadReleaseArtifact(version, artifact, output) {
+    try {
+        return await tc.downloadTool(`${main_1.REGCLIENT_REPO}/releases/download/${version}/${artifact}`, output);
+    }
+    catch (error) {
+        core.debug(error instanceof Error ? error.message : error);
+        throw Error(`Failed to download artifact ${artifact} ${version}`);
+    }
 }
 
 

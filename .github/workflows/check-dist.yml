@@ -32,28 +32,24 @@ jobs:
         run: npm run bundle
 
       - name: Compare Directories
-        id: diff
-        env:
-          DEPENDABOT: ${{ github.actor == 'dependabot[bot]' }}
+        id: compare
+        shell: bash
         run: |
           if [ ! -d dist/ ]; then
             echo "::error::Expected dist/ directory does not exist"
             exit 1
           fi
 
-          git add .
-          git status
-          git diff > diff.patch
-          [ -z "$(cat diff.patch)" ] && DIFF=false || DIFF=true
+          [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -eq 0 ] && DIFF=false || DIFF=true
           echo "diff=$DIFF" | tee -a "$GITHUB_OUTPUT"
           if [ "$DIFF" == "true" ]; then
             echo "::error::Detected uncommitted changes after build"
             exit 1
           fi
 
-      - name: Upload diff
-        if: (!cancelled()) && steps.diff.outputs.diff == 'true'
+      - name: Upload dist/
+        if: (!cancelled()) && steps.compare.outputs.diff == 'true'
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
-          name: diff.patch
-          path: diff.patch
+          name: dist
+          path: actions/installer/dist/

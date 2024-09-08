@@ -80,6 +80,82 @@ jobs:
             exit 1
           fi
 
+  test-bad-version:
+    name: Test bad version
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - v0.0.0
+          - foobar
+          - 7e1e47d
+          - ffffffffffffffffffffffffffffffffffffffff
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup regctl
+        id: regctl
+        uses: ./
+        continue-on-error: true
+        with:
+          regctl-release: ${{ matrix.version }}
+
+      - name: Test slsa-verifier
+        shell: bash
+        env:
+          FAILURE: ${{ steps.regctl.outcome  == 'failure' }}
+        run: |
+          if which regctl ; then
+            echo "::error::regctl was found in PATH"
+            exit 1
+          fi
+
+          if [ "$FAILURE" != "true" ]; then
+            echo "::error::Expected Action to fail but didn't"
+            exit 1
+          fi
+
+  test-invalid-version:
+    name: Test invalid version
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos, windows]
+        version:
+          - v0.0.1
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup regctl
+        id: regctl
+        uses: ./
+        continue-on-error: true
+        with:
+          regctl-release: ${{ matrix.version }}
+
+      - name: Test slsa-verifier
+        shell: bash
+        env:
+          FAILURE: ${{ steps.regctl.outcome  == 'failure' }}
+        run: |
+          if which regctl ; then
+            echo "::error::regctl was found in PATH"
+            exit 1
+          fi
+
+          if [ "$FAILURE" != "true" ]; then
+            echo "::error::Expected Action to fail but didn't"
+            exit 1
+          fi
+
   test-cache:
     name: Test cache
     runs-on: ${{ matrix.os }}-latest
