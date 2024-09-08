@@ -64,7 +64,7 @@ jobs:
       - name: Test regctl
         shell: bash
         env:
-          MATRIX_regctl-release: ${{ matrix.version }}
+          MATRIX_VERSION: ${{ matrix.version }}
           VERSION: ${{ steps.regctl.outputs.version }}
         run: |
           if ! which regctl ; then
