@@ -33296,7 +33296,7 @@ async function run() {
         core.setOutput('version', version);
         // Create temp directory for downloading non-cached versions
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'regctl_'));
-        core.debug(`tmpdir => ${tmpDir}`);
+        core.debug(`Created ${tmpDir}`);
         // Check if regctl is already in the tool-cache
         const cache = core.getInput('cache');
         core.debug('Checking regctl cache');
@@ -33349,18 +33349,18 @@ async function run() {
             core.info('📥 Loaded from runner cache');
         // Add the cached regctl to our PATH
         core.addPath(mainCachePath);
-        // Cleanup tmpDir
-        fs.rmSync(tmpDir, { recursive: true, force: true });
         core.info('🎉 regctl is ready');
     }
     catch (error) {
-        // Cleanup tmpDir before terminating during a failure
-        if (tmpDir)
-            fs.rmSync(tmpDir, { recursive: true, force: true });
         if (error instanceof Error)
             core.setFailed(error.message);
         else
             core.setFailed(error);
+    }
+    // Cleanup tmpDir if it was created at any point
+    if (tmpDir) {
+        core.debug(`Deleting ${tmpDir}`);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 }
 
