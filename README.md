@@ -16,7 +16,7 @@ adds it to your `PATH`, with optional signature verification if you use
 For a quick start guide on the usage of `regctl`, refer to
 [its documentation](https://github.com/regclient/regclient/blob/main/docs/regctl.md).
 
-For available regctl releases, refer to
+For available `regctl` releases, refer to
 [its releases](https://github.com/regclient/regclient/releases).
 
 > This action supports Linux, macOS and Windows runners (results may vary with
