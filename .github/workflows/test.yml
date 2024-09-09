@@ -61,6 +61,7 @@ jobs:
         uses: ./
         with:
           regctl-release: ${{ matrix.version }}
+          cache: false
 
       - name: Test regctl
         shell: bash
