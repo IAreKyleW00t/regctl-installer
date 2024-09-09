@@ -32,6 +32,7 @@ jobs:
         uses: ./
         with:
           verify: ${{ matrix.verify }}
+          cache: false
 
       - name: Test regctl
         shell: bash
