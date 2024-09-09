@@ -1,12 +1,13 @@
 import * as core from '@actions/core'
-import * as exec from '@actions/exec'
 import * as github from '@actions/github'
 import * as tc from '@actions/tool-cache'
+import * as exec from '@actions/exec'
+import * as io from '@actions/io'
+
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
 
-import { lookpath } from 'lookpath'
 import * as utils from './utils'
 
 export const REGCLIENT_REPO = 'https://github.com/regclient/regclient'
@@ -72,7 +73,7 @@ export async function run(): Promise<void> {
       fs.chmodSync(mainBin, 0o755)
 
       // Verify regctl if cosign is in the PATH (unless told to skip)
-      const cosign = await lookpath('cosign')
+      const cosign = await io.which('cosign')
       if (core.getBooleanInput('verify') && cosign) {
         // Download release metadata into tmpDir
         core.info('🔏 Downloading signature metadata')
@@ -132,6 +133,6 @@ export async function run(): Promise<void> {
   // Cleanup tmpDir if it was created at any point
   if (tmpDir) {
     core.debug(`Deleting ${tmpDir}`)
-    fs.rmSync(tmpDir, { recursive: true, force: true })
+    await io.rmRF(tmpDir)
   }
 }
