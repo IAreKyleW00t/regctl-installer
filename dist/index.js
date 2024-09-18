@@ -33153,7 +33153,7 @@ async function run() {
         let mainPath = tc.find('regctl', version.substring(1));
         core.setOutput('cache-hit', cache && !!mainPath);
         let mainBin;
-        if (!mainPath || !cache) {
+        if (!cache || !mainPath) {
             // Download regctl into tmpDir
             core.info('⏬ Downloading regctl');
             mainBin = await utils.downloadReleaseArtifact(version, ARTIFACT_NAME, path.join(tmpDir, BIN_NAME));
@@ -33198,7 +33198,8 @@ async function run() {
         else
             core.info('⏭️ Skipped signature verification');
         // Cache the regctl download if it was not already in the cache
-        if (!mainPath) {
+        // if cache=false, we overwrite it each time
+        if (!cache || !mainPath) {
             mainPath = await tc.cacheFile(mainBin, BIN_NAME, 'regctl', version.substring(1) // remove leading 'v'
             );
         }

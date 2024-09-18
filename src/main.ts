@@ -64,7 +64,7 @@ export async function run(): Promise<void> {
     core.setOutput('cache-hit', cache && !!mainPath)
 
     let mainBin
-    if (!mainPath || !cache) {
+    if (!cache || !mainPath) {
       // Download regctl into tmpDir
       core.info('⏬ Downloading regctl')
       mainBin = await utils.downloadReleaseArtifact(
@@ -120,7 +120,8 @@ export async function run(): Promise<void> {
     } else core.info('⏭️ Skipped signature verification')
 
     // Cache the regctl download if it was not already in the cache
-    if (!mainPath) {
+    // if cache=false, we overwrite it each time
+    if (!cache || !mainPath) {
       mainPath = await tc.cacheFile(
         mainBin,
         BIN_NAME,
