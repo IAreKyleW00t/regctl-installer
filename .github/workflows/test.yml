@@ -10,38 +10,6 @@ on:
       - main
 
 jobs:
-  test-cosign:
-    name: Test cosign
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos, ubuntu, windows]
-        verify: [true, false]
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
-
-      - name: Setup regctl
-        id: regctl
-        uses: ./
-        with:
-          verify: ${{ matrix.verify }}
-          cache: false
-
-      - name: Test regctl
-        shell: bash
-        run: |
-          if ! which regctl ; then
-            echo "::error::regctl not found in PATH"
-            exit 1
-          fi
-
   test-version:
     name: Test version
     runs-on: ${{ matrix.os }}-latest
@@ -159,18 +127,23 @@ jobs:
           fi
 
   test-cache:
-    name: Test cache
+    name: Test cache & cosign
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os: [macos, ubuntu, windows]
         cache: [true, false]
+        verify: [true, false]
     permissions:
       contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Install Cosign
+        if: matrix.verify
+        uses: sigstore/cosign-installer@4959ce089c160fddf62f7b42464195ba1a56d382 # v3.6.0
 
       - name: Setup regctl (cache)
         if: matrix.cache == true
@@ -181,6 +154,7 @@ jobs:
         uses: ./
         with:
           cache: ${{ matrix.cache }}
+          verify: ${{ matrix.verify }}
 
       - name: Test regctl
         shell: bash

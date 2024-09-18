@@ -60,70 +60,77 @@ export async function run(): Promise<void> {
     // Check if regctl is already in the tool-cache
     const cache = core.getInput('cache')
     core.debug('Checking regctl cache')
-    let mainCachePath = tc.find('regctl', version.substring(1))
-    core.setOutput('cache-hit', cache && !!mainCachePath)
-    if (!mainCachePath || !cache) {
+    let mainPath = tc.find('regctl', version.substring(1))
+    core.setOutput('cache-hit', cache && !!mainPath)
+
+    let mainBin
+    if (!mainPath || !cache) {
       // Download regctl into tmpDir
       core.info('⏬ Downloading regctl')
-      const mainBin = await utils.downloadReleaseArtifact(
+      mainBin = await utils.downloadReleaseArtifact(
         version,
         ARTIFACT_NAME,
         path.join(tmpDir, BIN_NAME)
       )
       fs.chmodSync(mainBin, 0o755)
+    } else {
+      core.info('📥 Loaded from runner cache')
+      mainBin = path.join(mainPath, BIN_NAME)
+    }
 
-      // Verify regctl if cosign is in the PATH (unless told to skip)
-      const cosign = await io.which('cosign')
-      if (core.getBooleanInput('verify') && cosign) {
-        // Download release metadata into tmpDir
-        core.info('🔏 Downloading signature metadata')
-        const metadataTar = await utils.downloadReleaseArtifact(
-          version,
-          'metadata.tgz',
-          path.join(tmpDir, 'metadata.tgz')
-        )
+    // Verify regctl if cosign is in the PATH (unless told to skip)
+    const cosign = await io.which('cosign')
+    if (core.getBooleanInput('verify') && cosign) {
+      // Download release metadata into tmpDir
+      core.info('🔏 Downloading signature metadata')
+      const metadataTar = await utils.downloadReleaseArtifact(
+        version,
+        'metadata.tgz',
+        path.join(tmpDir, 'metadata.tgz')
+      )
 
-        // Extract metadata
-        const metadataDir = await tc.extractTar(
-          metadataTar,
-          path.join(tmpDir, 'metadata')
-        )
+      // Extract metadata
+      const metadataDir = await tc.extractTar(
+        metadataTar,
+        path.join(tmpDir, 'metadata')
+      )
 
-        // Validate binary against downloaded signature
-        // This will display stdout and stderr automatically
-        core.info('🔍 Verifying signature')
-        try {
-          // This will exit 1 on error and display stdout and stderr automatically
-          await exec.getExecOutput(cosign, [
-            'verify-blob',
-            '--certificate-oidc-issuer',
-            'https://token.actions.githubusercontent.com',
-            '--certificate-identity-regexp',
-            'https://github.com/regclient/regclient/.github/workflows/',
-            '--certificate',
-            path.join(metadataDir, `regctl-${OS}-${ARCH}.pem`),
-            '--signature',
-            path.join(metadataDir, `regctl-${OS}-${ARCH}.sig`),
-            mainBin
-          ])
-        } catch (error) {
-          core.debug(error instanceof Error ? error.message : (error as string))
-          throw Error('regctl signature verification failed')
-        }
-        core.info('✅ Signature verified')
-      } else core.info('⏭️ Skipped signature verification')
+      // Validate binary against downloaded signature
+      // This will display stdout and stderr automatically
+      core.info('🔍 Verifying signature')
+      try {
+        // This will exit 1 on error and display stdout and stderr automatically
+        await exec.getExecOutput(cosign, [
+          'verify-blob',
+          '--certificate-oidc-issuer',
+          'https://token.actions.githubusercontent.com',
+          '--certificate-identity-regexp',
+          'https://github.com/regclient/regclient/.github/workflows/',
+          '--certificate',
+          path.join(metadataDir, `regctl-${OS}-${ARCH}.pem`),
+          '--signature',
+          path.join(metadataDir, `regctl-${OS}-${ARCH}.sig`),
+          mainBin
+        ])
+      } catch (error) {
+        core.debug(error instanceof Error ? error.message : (error as string))
+        throw Error('regctl signature verification failed')
+      }
+      core.info('✅ Signature verified')
+    } else core.info('⏭️ Skipped signature verification')
 
-      // Cache the regctl download
-      mainCachePath = await tc.cacheFile(
+    // Cache the regctl download if it was not already in the cache
+    if (!mainPath) {
+      mainPath = await tc.cacheFile(
         mainBin,
         BIN_NAME,
         'regctl',
         version.substring(1) // remove leading 'v'
       )
-    } else core.info('📥 Loaded from runner cache')
+    }
 
-    // Add the cached regctl to our PATH
-    core.addPath(mainCachePath)
+    // Add regctl to our PATH
+    core.addPath(mainPath)
     core.info('🎉 regctl is ready')
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
