@@ -35,8 +35,7 @@ For available `regctl` releases, refer to
 >
 > `cosign` must be in your `PATH` for signature verification or it will be
 > skipped - See
-> [Automatic verification with Cosign](#automatic-verification-with-cosign). If
-> `regctl` is loaded from cache it will **not** be re-verified.
+> [Automatic verification with Cosign](#automatic-verification-with-cosign).
 
 ### Inputs
 
