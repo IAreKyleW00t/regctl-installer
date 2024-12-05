@@ -7,7 +7,7 @@ describe('utils', () => {
       ['arm64', 'arm64'],
       ['ppc64', 'ppc64le'],
       ['s390x', 's390x']
-    ])('works for %s', async (arch, expected) => {
+    ])('works for %s', (arch, expected) => {
       const result = utils.getArch(arch)
       expect(result).toEqual(expected)
     })
@@ -21,7 +21,7 @@ describe('utils', () => {
       'ppc',
       'riscv64',
       's390'
-    ])('errors on %s', async arch => {
+    ])('errors on %s', arch => {
       const result = (): string => utils.getArch(arch)
       expect(result).toThrow(`Unsupported architecture ${arch}`)
     })
@@ -32,14 +32,14 @@ describe('utils', () => {
       ['win32', 'windows'],
       ['linux', 'linux'],
       ['darwin', 'darwin']
-    ])('works for %s', async (platform, expected) => {
+    ])('works for %s', (platform, expected) => {
       const result = utils.getOS(platform)
       expect(result).toEqual(expected)
     })
 
     test.each(['aix', 'freebsd', 'openbsd', 'sunos'])(
       'errors on %s',
-      async platform => {
+      platform => {
         const result = (): string => utils.getOS(platform)
         expect(result).toThrow(`Unsupported OS ${platform}`)
       }
@@ -47,7 +47,7 @@ describe('utils', () => {
   })
 
   describe('validVersion', () => {
-    test.each(['v0.0.0', 'v1.0.0'])('accepts %s', async version => {
+    test.each(['v0.0.0', 'v1.0.0'])('accepts %s', version => {
       const result = utils.validVersion(version)
       expect(result).toBeTruthy()
     })
@@ -57,25 +57,22 @@ describe('utils', () => {
       'foobar',
       '1.0.0',
       '57755b13f9c806ec4281bdb148fc6c6ed2d08726'
-    ])('rejects %s', async version => {
+    ])('rejects %s', version => {
       const result = utils.validVersion(version)
       expect(result).toBeFalsy()
     })
   })
 
   describe('isSha', () => {
-    test('accepts 57755b13f9c806ec4281bdb148fc6c6ed2d08726', async () => {
+    test('accepts 57755b13f9c806ec4281bdb148fc6c6ed2d08726', () => {
       const sha = '57755b13f9c806ec4281bdb148fc6c6ed2d08726'
       const result = utils.isSha(sha)
       expect(result).toBeTruthy()
     })
 
-    test.each(['foobar', '1.0.0', '1', '1.0', '57755b1'])(
-      'rejects %s',
-      async sha => {
-        const result = utils.isSha(sha)
-        expect(result).toBeFalsy()
-      }
-    )
+    test.each(['foobar', '1.0.0', '1', '1.0', '57755b1'])('rejects %s', sha => {
+      const result = utils.isSha(sha)
+      expect(result).toBeFalsy()
+    })
   })
 })
