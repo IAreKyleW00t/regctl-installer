@@ -1,7 +1,7 @@
 {
   "name": "regctl-installer",
   "description": "GitHub Action for installing the regctl CLI tool",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "author": "Kyle Colantonio",
   "private": true,
   "homepage": "https://github.com/IAreKyleW00t/regctl-installer",
