@@ -26,7 +26,7 @@ For available `regctl` releases, refer to
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v3
+  uses: iarekylew00t/regctl-installer@v4
 ```
 
 ## Usage
@@ -60,7 +60,7 @@ For available `regctl` releases, refer to
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v3
+  uses: iarekylew00t/regctl-installer@v4
   with:
     regctl-release: v0.7.1
 ```
@@ -69,7 +69,7 @@ For available `regctl` releases, refer to
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v3
+  uses: iarekylew00t/regctl-installer@v4
 
 - name: Login to DockerHub
   uses: docker/login-action@v3
@@ -89,7 +89,7 @@ For available `regctl` releases, refer to
 
 ```yaml
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v3
+  uses: iarekylew00t/regctl-installer@v4
 
 - name: Login to DockerHub
   run: |
@@ -113,7 +113,7 @@ For available `regctl` releases, refer to
   uses: sigstore/cosign-installer@v3.6.0
 
 - name: Install regctl
-  uses: iarekylew00t/regctl-installer@v3
+  uses: iarekylew00t/regctl-installer@v4
 ```
 
 ## Development
