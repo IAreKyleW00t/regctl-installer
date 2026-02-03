@@ -67,9 +67,8 @@ export async function run(): Promise<void> {
     if (!cache || !mainPath) {
       // Download regctl into tmpDir
       core.info('⏬ Downloading regctl')
-      mainBin = await utils.downloadReleaseArtifact(
-        version,
-        ARTIFACT_NAME,
+      mainBin = await tc.downloadTool(
+        `${REGCLIENT_REPO}/releases/download/${version}/${ARTIFACT_NAME}`,
         path.join(tmpDir, BIN_NAME)
       )
       fs.chmodSync(mainBin, 0o755)
@@ -83,9 +82,8 @@ export async function run(): Promise<void> {
     if (core.getBooleanInput('verify') && cosign) {
       // Download release metadata into tmpDir
       core.info('🔏 Downloading signature metadata')
-      const metadataTar = await utils.downloadReleaseArtifact(
-        version,
-        'metadata.tgz',
+      const metadataTar = await tc.downloadTool(
+        `${REGCLIENT_REPO}/releases/download/${version}/metadata.tgz`,
         path.join(tmpDir, 'metadata.tgz')
       )
 
